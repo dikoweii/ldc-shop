@@ -549,6 +549,14 @@
     },
     "update": {
         "available": "Update Available",
+        "title": "Updates",
+        "description": "Check if a newer version is available.",
+        "checkNow": "Check for updates",
+        "checking": "Checking...",
+        "upToDate": "You're up to date",
+        "checkFailed": "Update check failed",
+        "currentVersion": "Current version: {{current}}",
+        "viewRelease": "View release",
         "versionInfo": "Current: {{current}} → Latest: {{latest}}",
         "syncNow": "Sync on GitHub"
     }

@@ -16,6 +16,32 @@ async function safeAddColumn(table: string, column: string, definition: string) 
     }
 }
 
+async function ensureIndexes() {
+    const indexStatements = [
+        `CREATE INDEX IF NOT EXISTS products_active_sort_idx ON products(is_active, sort_order, created_at)`,
+        `CREATE INDEX IF NOT EXISTS cards_product_used_reserved_idx ON cards(product_id, is_used, reserved_at)`,
+        `CREATE INDEX IF NOT EXISTS cards_reserved_order_idx ON cards(reserved_order_id)`,
+        `CREATE INDEX IF NOT EXISTS orders_status_paid_at_idx ON orders(status, paid_at)`,
+        `CREATE INDEX IF NOT EXISTS orders_status_created_at_idx ON orders(status, created_at)`,
+        `CREATE INDEX IF NOT EXISTS orders_user_status_created_at_idx ON orders(user_id, status, created_at)`,
+        `CREATE INDEX IF NOT EXISTS orders_product_status_idx ON orders(product_id, status)`,
+        `CREATE INDEX IF NOT EXISTS reviews_product_created_at_idx ON reviews(product_id, created_at)`,
+        `CREATE INDEX IF NOT EXISTS refund_requests_order_id_idx ON refund_requests(order_id)`,
+    ];
+
+    for (const statement of indexStatements) {
+        try {
+            await db.run(sql.raw(statement));
+        } catch (e: any) {
+            const errorString = (JSON.stringify(e) + String(e) + (e?.message || '')).toLowerCase();
+            if (errorString.includes('no such table') || errorString.includes('does not exist')) {
+                continue;
+            }
+            throw e;
+        }
+    }
+}
+
 // Auto-initialize database on first query
 async function ensureDatabaseInitialized() {
     if (dbInitialized) return;
@@ -28,6 +54,7 @@ async function ensureDatabaseInitialized() {
         // This is a proactive check on startup.
         await ensureProductsColumns();
         await migrateTimestampColumnsToMs();
+        await ensureIndexes();
 
         dbInitialized = true;
         return;
@@ -52,6 +79,7 @@ async function ensureDatabaseInitialized() {
             is_shared INTEGER DEFAULT 0,
             sort_order INTEGER DEFAULT 0,
             purchase_limit INTEGER,
+            purchase_warning TEXT,
             created_at INTEGER DEFAULT (unixepoch() * 1000)
         );
         
@@ -152,6 +180,7 @@ async function ensureDatabaseInitialized() {
     `);
 
     await migrateTimestampColumnsToMs();
+    await ensureIndexes();
 
     dbInitialized = true;
     console.log("Database initialized successfully");
